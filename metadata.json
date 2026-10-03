@@ -1,0 +1,6 @@
+{
+  "name": "StoryBoard AI - Generator Prompt TTI & TTV Iklan",
+  "description": "Generator prompt Text-to-Image (TTI) storyboard grid dan Text-to-Video (TTV) untuk promosi iklan produk dengan analisis visual produk dan karakter model.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

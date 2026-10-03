@@ -1,0 +1,43 @@
+import { GeneratorRequest, StoryboardData } from '../types';
+
+export const DEFAULT_REQUEST: GeneratorRequest = {
+  productImage: '',
+  modelImage: '',
+  modelPersonaPreset: '',
+  productName: '',
+  brandName: '',
+  tagline: '',
+  productDescription: '',
+  productFeatures: [],
+  storyboardStyle: 'unboxing',
+  numParts: 1,
+  numPanels: 6,
+  duration: 20,
+  aspectRatio: '9:16',
+  targetAudience: 'Target pembeli potensial di TikTok, Instagram Reels & E-Commerce',
+  musicStyle: 'Upbeat modern pop lo-fi commercial with crisp percussion',
+  language: 'id',
+  targetTtiEngine: 'flow',
+  targetTtvEngine: 'kling',
+};
+
+export const INITIAL_EMPTY_STORYBOARD: StoryboardData = {
+  brandName: '',
+  productName: '',
+  tagline: '',
+  durationTotal: 20,
+  partsCount: 1,
+  scenesCount: 6,
+  aspectRatio: '9:16',
+  musicRecommendation: 'Upbeat modern commercial pop with crisp percussion',
+  overlayTextRule: 'Minimal subtitle & callout',
+  targetAudience: 'Pengguna media sosial & pembeli online',
+  style: 'unboxing',
+  productVisualSummary: '',
+  modelVisualSummary: '',
+  masterTtiPrompt: '',
+  masterTtiNegativePrompt: 'blurry, low resolution, bad hands, distorted text, ugly, oversaturated, amateur footage',
+  masterTtvPrompt: '',
+  bgmSfxNotes: '',
+  parts: [],
+};
