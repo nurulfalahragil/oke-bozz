@@ -30,11 +30,33 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Section 1: Output TTI ke Flow AI / Midjourney */}
+        {/* Section 1: 6 Kategori Gaya & Struktur Storyboard */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            1. Pilihan 6 Kategori Gaya &amp; Struktur Alur Storyboard
+          </h4>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            OkeBozz menyediakan 38 gaya storyboard iklan yang dikelompokkan ke dalam 6 kategori terstruktur:
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <div><strong className="text-purple-300">🎭 Storytelling:</strong> Lifestyle, Day in My Life, Emotional Story, Problem → Solution, Transformation, Gifting, Story + Reveal.</div>
+            <div><strong className="text-blue-300">🛍️ Product &amp; Shopping:</strong> Product Showcase, Unboxing, Unboxing + Review, Product Demo, Feature Highlight, Benefit Focus, Comparison.</div>
+            <div><strong className="text-emerald-300">📱 Social &amp; UGC:</strong> UGC, POV, Review/Testimoni, First Impression, Reaksi, Challenge, ASMR Product, Satisfying.</div>
+            <div><strong className="text-amber-300">⚡ Direct Response:</strong> Hook → Product → Benefit → CTA, Before → After, 3 Benefits, Top Features, Limited Promo, Q&amp;A.</div>
+            <div><strong className="text-rose-300">🎬 Cinematic:</strong> Mini Commercial, Cinematic Product, Aesthetic, Slow Motion, Macro Shot, Emotional Cinematic.</div>
+            <div><strong className="text-sky-300">📚 Educational:</strong> Tutorial, How To Use, Myth → Fact, Behind The Scenes, Expectation vs Reality.</div>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Saat gaya dipilih, AI otomatis menyesuaikan <strong>Rantai Alur Adegan</strong> (Hook, Eksplorasi Karakter, Interaksi Produk, Detail, Pembuktian, hingga CTA), sudut kamera, pencahayaan, dan naskah Voice Over.
+          </p>
+        </div>
+
+        {/* Section 2: Output TTI ke Flow AI / Midjourney */}
         <div className="space-y-2">
           <h4 className="text-sm font-bold text-indigo-300 flex items-center gap-2">
             <ImageIcon className="w-4 h-4 text-indigo-400" />
-            1. Cara Menghasilkan Lembar Storyboard di Flow AI / Midjourney
+            2. Cara Menghasilkan Lembar Storyboard di Flow AI / Midjourney
           </h4>
           <p className="text-xs text-slate-300 leading-relaxed">
             Prompt TTI (Text-to-Image) di aplikasi ini telah direkayasa dengan teknik <em>Presentation Sheet Layout Prompting</em>. Saat Anda memasukkan prompt ini ke <strong>Flow AI</strong>, <strong>Midjourney v6</strong>, atau <strong>Flux</strong>, AI tidak hanya membuat satu foto, melainkan me-render:
@@ -42,18 +64,18 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
           <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside bg-slate-950 p-3 rounded-xl border border-slate-800">
             <li>Header judul brand &amp; produk dengan banner kapsul modern</li>
             <li>Kotak spesifikasi teknis (Durasi, Part, Jumlah Scene, Rasio)</li>
-            <li>Grid 4 panel scene dengan bingkai rapi</li>
+            <li>Grid 3, 4, atau 6 panel scene dengan bingkai rapi</li>
             <li>Anotasi panah tulisan tangan (handwritten callouts)</li>
             <li>Tabel kamera (Shot, Angle, Durasi, VO, Subtitle) di bawah tiap scene</li>
             <li>Bar footer musik &amp; target audiens</li>
           </ul>
         </div>
 
-        {/* Section 2: Output TTV ke Kling AI / Runway */}
+        {/* Section 3: Output TTV ke Kling AI / Runway */}
         <div className="space-y-2">
           <h4 className="text-sm font-bold text-pink-300 flex items-center gap-2">
             <Video className="w-4 h-4 text-pink-400" />
-            2. Cara Menghasilkan Video Iklan di Kling AI / Runway Gen-3
+            3. Cara Menghasilkan Video Iklan di Kling AI / Runway Gen-3
           </h4>
           <p className="text-xs text-slate-300 leading-relaxed">
             Untuk menghasilkan video iklan gerak nyata:

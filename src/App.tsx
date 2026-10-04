@@ -4,6 +4,7 @@ import { Sidebar, ActiveMenu } from './components/Sidebar';
 import { Header } from './components/Header';
 import { GuideModal } from './components/GuideModal';
 import { StoryboardStudioView } from './components/modules/StoryboardStudioView';
+import { SimpleAdStudioView } from './components/modules/SimpleAdStudioView';
 import { AnimationStudioView } from './components/modules/AnimationStudioView';
 import { DesignerStudioView } from './components/modules/DesignerStudioView';
 import { TextToSpeechStudioView } from './components/modules/TextToSpeechStudioView';
@@ -14,14 +15,20 @@ export default function App() {
   const [activeMenu, setActiveMenu] = useState<ActiveMenu>('storyboard');
   const [isOpenMobile, setIsOpenMobile] = useState<boolean>(false);
   const [guideOpen, setGuideOpen] = useState<boolean>(false);
+  const [customVoText, setCustomVoText] = useState<string>('');
 
-  // Shared state across studios (uploading product photo reflects in Designer and Animation!)
+  // Shared state across studios (uploading product photo reflects in Designer, Animation, and Simple Ad!)
   const [request, setRequest] = useState<GeneratorRequest>(DEFAULT_REQUEST);
   const [storyboardData, setStoryboardData] = useState<StoryboardData>(INITIAL_EMPTY_STORYBOARD);
 
+  const handleSendToTts = (scriptText: string) => {
+    setCustomVoText(scriptText);
+    setActiveMenu('tts');
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row font-sans">
-      {/* LEFT PANEL: Multi-Module Sidebar Navigation */}
+      {/* LEFT PANEL: Multi-Module Sidebar Navigation with Submenus */}
       <Sidebar
         activeMenu={activeMenu}
         onSelectMenu={(menu) => setActiveMenu(menu)}
@@ -53,7 +60,7 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Menu 1: Iklan Storyboard */}
+          {/* Menu 1.1: Iklan Storyboard (Lengkap / Multi-Panel) */}
           {activeMenu === 'storyboard' && (
             <StoryboardStudioView
               request={request}
@@ -61,6 +68,17 @@ export default function App() {
               storyboardData={storyboardData}
               setStoryboardData={setStoryboardData}
               onOpenGuide={() => setGuideOpen(true)}
+              onSwitchToSimpleAd={() => setActiveMenu('iklan-simpel')}
+            />
+          )}
+
+          {/* Menu 1.2: Sub Menu Iklan Simpel (Instan & Cepat) */}
+          {activeMenu === 'iklan-simpel' && (
+            <SimpleAdStudioView
+              request={request}
+              setRequest={setRequest}
+              onSwitchToStoryboard={() => setActiveMenu('storyboard')}
+              onSwitchToTts={handleSendToTts}
             />
           )}
 
@@ -86,26 +104,29 @@ export default function App() {
           {activeMenu === 'tts' && (
             <TextToSpeechStudioView
               productName={request.productName}
-              defaultVoText={storyboardData.parts[0]?.scenes.map(s => s.vo).join(' ')}
-              defaultDuration={storyboardData.durationTotal}
+              defaultVoText={
+                customVoText ||
+                storyboardData.parts[0]?.scenes?.map((s) => s.vo).join(' ') ||
+                'Selamat datang di OkeBozz AI Studio. Silakan ketik atau pilih naskah iklan Anda.'
+              }
+              defaultDuration={storyboardData.durationTotal || 15}
             />
           )}
         </main>
 
+        {/* Guide Modal */}
+        <GuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
+
         {/* Footer */}
         <footer className="border-t border-slate-800/80 bg-slate-900/50 py-4 text-center text-xs text-slate-400">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p>© {new Date().getFullYear()} OkeBozz AI Studio — Iklan Storyboard • Animasi • Desainer • Teks to Suara</p>
+            <p>© {new Date().getFullYear()} OkeBozz AI Studio — Iklan Storyboard • Iklan Simpel • Animasi • Desainer • Teks to Suara</p>
             <div className="flex items-center gap-4 text-slate-400 text-[11px]">
               <span>Flow AI • Midjourney • Kling AI • Runway Gen-3</span>
             </div>
           </div>
         </footer>
       </div>
-
-      {/* Guide Modal */}
-      <GuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 }
-

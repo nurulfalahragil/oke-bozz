@@ -7,11 +7,14 @@ import {
   Volume2,
   Layers,
   ChevronRight,
+  ChevronDown,
   Menu,
-  X
+  X,
+  Zap,
+  FileText
 } from 'lucide-react';
 
-export type ActiveMenu = 'storyboard' | 'animasi' | 'desainer' | 'tts';
+export type ActiveMenu = 'storyboard' | 'iklan-simpel' | 'animasi' | 'desainer' | 'tts';
 
 interface SidebarProps {
   activeMenu: ActiveMenu;
@@ -26,6 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onToggleMobile,
 }) => {
+  const isStoryboardGroupActive = activeMenu === 'storyboard' || activeMenu === 'iklan-simpel';
+
   const menuItems = [
     {
       id: 'storyboard' as ActiveMenu,
@@ -36,6 +41,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: 'Utama',
       gradient: 'from-indigo-500 to-purple-600',
       activeColor: 'bg-indigo-600/20 text-indigo-300 border-indigo-500/50',
+      hasSubmenu: true,
+      subItems: [
+        {
+          id: 'storyboard' as ActiveMenu,
+          title: 'Storyboard Lengkap',
+          subtitle: '40 Gaya, Multi-Panel & Master Sheet',
+          icon: FileText,
+          badge: '40 Gaya',
+          badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+        },
+        {
+          id: 'iklan-simpel' as ActiveMenu,
+          title: 'Iklan Simpel',
+          subtitle: 'Format Cepat 15–30s, Hook & Caption',
+          icon: Zap,
+          badge: 'Instan ⚡',
+          badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        },
+      ],
     },
     {
       id: 'animasi' as ActiveMenu,
@@ -116,56 +140,136 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {menuItems.map((item) => {
-            const isActive = activeMenu === item.id;
+            const isItemActive =
+              item.id === 'storyboard'
+                ? isStoryboardGroupActive
+                : activeMenu === item.id;
             const Icon = item.icon;
 
             return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  onSelectMenu(item.id);
-                  if (isOpenMobile) onToggleMobile();
-                }}
-                className={`w-full text-left p-3 rounded-xl border transition-all cursor-pointer group flex items-center gap-3 relative ${
-                  isActive
-                    ? `${item.activeColor} shadow-md shadow-indigo-950/40 font-semibold`
-                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 hover:border-slate-800'
-                }`}
-              >
-                <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
-                    isActive
-                      ? `bg-gradient-to-tr ${item.gradient} text-white shadow-md shadow-indigo-600/30`
-                      : 'bg-slate-800 text-slate-400 group-hover:text-slate-200 group-hover:bg-slate-700'
+              <div key={item.id} className="space-y-1">
+                {/* Main Menu Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (item.id === 'storyboard') {
+                      onSelectMenu(activeMenu === 'iklan-simpel' ? 'iklan-simpel' : 'storyboard');
+                    } else {
+                      onSelectMenu(item.id);
+                    }
+                    if (isOpenMobile && !item.hasSubmenu) onToggleMobile();
+                  }}
+                  className={`w-full text-left p-3 rounded-xl border transition-all cursor-pointer group flex items-center gap-3 relative ${
+                    isItemActive
+                      ? `${item.activeColor} shadow-md shadow-indigo-950/40 font-semibold`
+                      : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 hover:border-slate-800'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white truncate flex items-center gap-1.5">
-                      <span className="text-[10px] font-mono text-slate-400">{item.number}.</span>
-                      {item.title}
-                    </span>
-                    <span
-                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase ${
-                        isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
+                  <div
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
+                      isItemActive
+                        ? `bg-gradient-to-tr ${item.gradient} text-white shadow-md shadow-indigo-600/30`
+                        : 'bg-slate-800 text-slate-400 group-hover:text-slate-200 group-hover:bg-slate-700'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
                   </div>
-                  <p className="text-[11px] text-slate-400 truncate mt-0.5">{item.subtitle}</p>
-                </div>
 
-                {isActive && (
-                  <ChevronRight className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                        <span className="text-[10px] font-mono text-slate-400">{item.number}.</span>
+                        {item.title}
+                      </span>
+                      <span
+                        className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase ${
+                          isItemActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 truncate mt-0.5">{item.subtitle}</p>
+                  </div>
+
+                  {item.hasSubmenu ? (
+                    <ChevronDown
+                      className={`w-4 h-4 text-indigo-400 flex-shrink-0 transition-transform ${
+                        isItemActive ? 'rotate-0' : '-rotate-90 text-slate-500'
+                      }`}
+                    />
+                  ) : (
+                    isItemActive && <ChevronRight className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                  )}
+                </button>
+
+                {/* Sub Menu Items (Under Menu 1: Iklan Storyboard) */}
+                {item.hasSubmenu && (
+                  <div
+                    className={`pl-4 pr-1 space-y-1 transition-all ${
+                      isStoryboardGroupActive ? 'block mt-1' : 'hidden'
+                    }`}
+                  >
+                    {item.subItems?.map((sub) => {
+                      const isSubActive = activeMenu === sub.id;
+                      const SubIcon = sub.icon;
+
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectMenu(sub.id);
+                            if (isOpenMobile) onToggleMobile();
+                          }}
+                          className={`w-full text-left p-2 rounded-lg border transition-all cursor-pointer flex items-center gap-2.5 relative ${
+                            isSubActive
+                              ? sub.id === 'iklan-simpel'
+                                ? 'bg-amber-500/15 border-amber-500/50 text-white shadow-xs font-bold'
+                                : 'bg-indigo-500/20 border-indigo-500/50 text-white shadow-xs font-bold'
+                              : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 hover:border-slate-800'
+                          }`}
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-md flex items-center justify-center ${
+                              isSubActive
+                                ? sub.id === 'iklan-simpel'
+                                  ? 'bg-amber-500 text-slate-950 shadow-xs'
+                                  : 'bg-indigo-600 text-white shadow-xs'
+                                : 'bg-slate-800 text-slate-400'
+                            }`}
+                          >
+                            <SubIcon className="w-3.5 h-3.5" />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs truncate">{sub.title}</span>
+                              <span
+                                className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full border ${sub.badgeColor}`}
+                              >
+                                {sub.badge}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 truncate">{sub.subtitle}</p>
+                          </div>
+
+                          {isSubActive && (
+                            <div
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                sub.id === 'iklan-simpel' ? 'bg-amber-400' : 'bg-indigo-400'
+                              }`}
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
@@ -175,10 +279,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/50 space-y-1">
             <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px]">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>All 4 Studio Modules Ready</span>
+              <span>All Studio Modules Ready</span>
             </div>
             <p className="text-[10px] text-slate-400 leading-relaxed">
-              Pilih menu di panel kiri untuk beralih fungsi studio iklan &amp; prompt AI.
+              Termasuk sub-menu <strong>Iklan Simpel</strong> untuk prompt video cepat 15s.
             </p>
           </div>
         </div>

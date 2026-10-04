@@ -17,6 +17,7 @@ import { TtiOutputView } from '../TtiOutputView';
 import { TtvOutputView } from '../TtvOutputView';
 import { GeneratorRequest, StoryboardData } from '../../types';
 import { generateStoryboardWithAi } from '../../services/storyboardGenerator';
+import { Zap } from 'lucide-react';
 
 interface StoryboardStudioViewProps {
   request: GeneratorRequest;
@@ -24,6 +25,7 @@ interface StoryboardStudioViewProps {
   storyboardData: StoryboardData;
   setStoryboardData: React.Dispatch<React.SetStateAction<StoryboardData>>;
   onOpenGuide: () => void;
+  onSwitchToSimpleAd?: () => void;
 }
 
 export const StoryboardStudioView: React.FC<StoryboardStudioViewProps> = ({
@@ -32,6 +34,7 @@ export const StoryboardStudioView: React.FC<StoryboardStudioViewProps> = ({
   storyboardData,
   setStoryboardData,
   onOpenGuide,
+  onSwitchToSimpleAd,
 }) => {
   const [activeTab, setActiveTab] = useState<'tti' | 'ttv' | 'export'>('tti');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -143,6 +146,53 @@ Prompt TTV: ${s.scenePromptTtv}
 
   return (
     <div className="space-y-6">
+      {/* Sub Menu Switcher (Storyboard Lengkap vs Iklan Simpel) */}
+      <div className="bg-slate-900/90 rounded-2xl p-3 sm:p-4 border border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+            <FileText className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-extrabold text-white">
+                Sub Menu: Storyboard Lengkap
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                40 Gaya Tersedia
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Generator Master TTI Presentasi Multi-Panel &amp; Prompt Video Scene TTV Komersial
+            </p>
+          </div>
+        </div>
+
+        {/* Mode Switch Tabs */}
+        <div className="flex items-center gap-1.5 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 w-full sm:w-auto justify-center">
+          <button
+            type="button"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md cursor-default flex items-center gap-1.5"
+          >
+            <FileText className="w-3.5 h-3.5 text-white" />
+            <span>Storyboard Lengkap</span>
+          </button>
+
+          {onSwitchToSimpleAd && (
+            <button
+              type="button"
+              onClick={onSwitchToSimpleAd}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/80 transition cursor-pointer flex items-center gap-1.5"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>Iklan Simpel</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                1-Click
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: Input Configuration Studio (Tahap 1 - 4) */}
         <div className="lg:col-span-5 space-y-5">
@@ -161,39 +211,65 @@ Prompt TTV: ${s.scenePromptTtv}
           {/* Tahap 1: Foto Produk (Wajib) */}
           <ProductUploader
             image={request.productImage}
-            onChange={(img) => setRequest({ ...request, productImage: img })}
+            onChange={(img) => setRequest((prev) => ({ ...prev, productImage: img }))}
           />
 
           {/* Tahap 2: Karakter Model (Opsional) */}
           <ModelSelector
             modelImage={request.modelImage}
-            onChangeModelImage={(img) => setRequest({ ...request, modelImage: img })}
+            onChangeModelImage={(img) => setRequest((prev) => ({ ...prev, modelImage: img }))}
           />
 
           {/* Tahap 3: Deskripsi Produk */}
           <ProductDetailsForm
             productName={request.productName}
-            onChangeProductName={(val) => setRequest({ ...request, productName: val })}
+            onChangeProductName={(val) => setRequest((prev) => ({ ...prev, productName: val }))}
             description={request.productDescription}
-            onChangeDescription={(val) => setRequest({ ...request, productDescription: val })}
+            onChangeDescription={(val) => setRequest((prev) => ({ ...prev, productDescription: val }))}
           />
 
           {/* Tahap 4: Konfigurasi Storyboard */}
           <StoryboardConfig
             style={request.storyboardStyle}
-            onChangeStyle={(st) => setRequest({ ...request, storyboardStyle: st })}
+            onChangeStyle={(st, cat) =>
+              setRequest((prev) => ({
+                ...prev,
+                storyboardStyle: st,
+                ...(cat ? { storyboardCategory: cat } : {}),
+              }))
+            }
+            category={request.storyboardCategory}
+            onChangeCategory={(cat) =>
+              setRequest((prev) => ({ ...prev, storyboardCategory: cat }))
+            }
+            structure={request.storyboardStructure}
+            onChangeStructure={(struct) =>
+              setRequest((prev) => ({ ...prev, storyboardStructure: struct }))
+            }
             numParts={request.numParts}
-            onChangeNumParts={(parts) => setRequest({ ...request, numParts: parts })}
+            onChangeNumParts={(parts) =>
+              setRequest((prev) => ({ ...prev, numParts: parts }))
+            }
             numPanels={request.numPanels}
-            onChangeNumPanels={(panels) => setRequest({ ...request, numPanels: panels })}
+            onChangeNumPanels={(panels) =>
+              setRequest((prev) => ({ ...prev, numPanels: panels }))
+            }
             duration={request.duration}
-            onChangeDuration={(sec) => setRequest({ ...request, duration: sec })}
+            onChangeDuration={(sec) =>
+              setRequest((prev) => ({ ...prev, duration: sec }))
+            }
             aspectRatio={request.aspectRatio}
-            onChangeAspectRatio={(ratio) => setRequest({ ...request, aspectRatio: ratio })}
+            onChangeAspectRatio={(ratio) =>
+              setRequest((prev) => ({ ...prev, aspectRatio: ratio }))
+            }
             targetTtiEngine={request.targetTtiEngine}
-            onChangeTargetTtiEngine={(eng) => setRequest({ ...request, targetTtiEngine: eng })}
+            onChangeTargetTtiEngine={(eng) =>
+              setRequest((prev) => ({ ...prev, targetTtiEngine: eng }))
+            }
             targetTtvEngine={request.targetTtvEngine}
-            onChangeTargetTtvEngine={(eng) => setRequest({ ...request, targetTtvEngine: eng })}
+            onChangeTargetTtvEngine={(eng) =>
+              setRequest((prev) => ({ ...prev, targetTtvEngine: eng }))
+            }
           />
 
           {/* MAIN GENERATE BUTTON */}

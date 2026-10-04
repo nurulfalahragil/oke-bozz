@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Palette,
   Clock,
@@ -8,13 +8,32 @@ import {
   Cpu,
   Video,
   Check,
-  Sparkles
+  Sparkles,
+  Search,
+  Camera,
+  Sun,
+  Mic,
+  ArrowRight,
+  ListTree,
+  Sliders,
+  ChevronDown
 } from 'lucide-react';
-import { AspectRatio, StoryboardStyle, TtiEngine, TtvEngine } from '../types';
+import { AspectRatio, StoryboardCategory, StoryboardStructure, StoryboardStyle, TtiEngine, TtvEngine } from '../types';
+import {
+  ALL_STORYBOARD_STYLES,
+  STORYBOARD_CATEGORIES,
+  STRUCTURE_FLOW_PRESETS,
+  getStyleById,
+  StoryboardStyleItem
+} from '../data/storyboardStyles';
 
 interface StoryboardConfigProps {
   style: StoryboardStyle;
-  onChangeStyle: (style: StoryboardStyle) => void;
+  onChangeStyle: (style: StoryboardStyle, category?: StoryboardCategory) => void;
+  category?: StoryboardCategory;
+  onChangeCategory?: (cat: StoryboardCategory) => void;
+  structure?: StoryboardStructure;
+  onChangeStructure?: (struct: StoryboardStructure) => void;
   numParts: number;
   onChangeNumParts: (parts: number) => void;
   numPanels: number;
@@ -29,50 +48,11 @@ interface StoryboardConfigProps {
   onChangeTargetTtvEngine: (engine: TtvEngine) => void;
 }
 
-const STYLE_OPTIONS: { id: StoryboardStyle; name: string; desc: string; badge?: string }[] = [
-  {
-    id: 'lifestyle',
-    name: 'Lifestyle Showcase',
-    desc: 'Penggunaan nyata sehari-hari, outfit match, outdoor & indoor aesthetic.',
-    badge: 'Paling Populer',
-  },
-  {
-    id: 'before_after',
-    name: 'Before / After (Masalah vs Solusi)',
-    desc: 'Membandingkan kerepotan sebelum memakai produk vs kepuasan sesudahnya.',
-  },
-  {
-    id: 'unboxing',
-    name: 'Unboxing & First Impression',
-    desc: 'Sensasi membuka paket, detail aksesoris, kompartemen, dan reaksi pertama.',
-  },
-  {
-    id: 'testimonial',
-    name: 'Testimoni & UGC Review Kreator',
-    desc: 'Gaya review kreator TikTok, tatap kamera, jujur, santai, dan meyakinkan.',
-  },
-  {
-    id: 'problem_solution',
-    name: 'Pain Point / Problem - Solution',
-    desc: 'Hook masalah umum yang dialami audiens langsung dijawab dengan produk.',
-  },
-  {
-    id: 'asmr_detail',
-    name: 'ASMR & Luxury Aesthetic Detail',
-    desc: 'Fokus close up tekstur, suara resleting/klik, dan kemewahan material.',
-  },
-  {
-    id: 'emotional_story',
-    name: 'Emotional Storytelling',
-    desc: 'Alur cerita hangat yang menghubungkan emosi audiens dengan manfaat produk.',
-  },
-];
-
 const DURATION_OPTIONS = [10, 15, 20, 30, 60];
 const PANEL_OPTIONS = [
   { count: 3, label: '3 Scene', desc: 'Hook → Feature → CTA' },
-  { count: 4, label: '4 Scene (Standar Referensi)', desc: 'Hook → Detail/Insert → Lifestyle → Closing/CTA', isDefault: true },
-  { count: 6, label: '6 Scene', desc: 'Hook → Masalah → Solusi → Detail → Lifestyle → CTA' },
+  { count: 4, label: '4 Scene', desc: '2x2 Grid Standar Referensi', isDefault: true },
+  { count: 6, label: '6 Scene', desc: '3x2 Grid Storytelling Lengkap' },
 ];
 
 const RATIO_OPTIONS: { ratio: AspectRatio; label: string; desc: string }[] = [
@@ -85,6 +65,10 @@ const RATIO_OPTIONS: { ratio: AspectRatio; label: string; desc: string }[] = [
 export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
   style,
   onChangeStyle,
+  category,
+  onChangeCategory,
+  structure = 'auto',
+  onChangeStructure,
   numParts,
   onChangeNumParts,
   numPanels,
@@ -98,56 +82,329 @@ export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
   targetTtvEngine,
   onChangeTargetTtvEngine,
 }) => {
+  const currentStyleItem = useMemo(() => getStyleById(style), [style]);
+
+  // Active Category filter tab (defaults to 'all' so users see all available styles immediately)
+  const [activeCategory, setActiveCategory] = useState<StoryboardCategory | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFullBreakdown, setShowFullBreakdown] = useState(true);
+
+  // Filtered styles based on category and search
+  const filteredStyles = useMemo(() => {
+    return ALL_STORYBOARD_STYLES.filter((item) => {
+      const matchCat = activeCategory === 'all' || item.category === activeCategory;
+      const matchSearch =
+        !searchQuery.trim() ||
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.explanation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.suitableFor.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchCat && matchSearch;
+    });
+  }, [activeCategory, searchQuery]);
+
+  const handleSelectStyle = (item: StoryboardStyleItem) => {
+    onChangeStyle(item.id, item.category);
+    if (onChangeCategory) {
+      onChangeCategory(item.category);
+    }
+  };
+
+  const activeStructurePreset = useMemo(() => {
+    return STRUCTURE_FLOW_PRESETS.find((p) => p.id === structure) || STRUCTURE_FLOW_PRESETS[0];
+  }, [structure]);
+
   return (
-    <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700/70 shadow-sm space-y-5">
-      <div className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold border border-emerald-500/30">
-          4
+    <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700/70 shadow-sm space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold border border-emerald-500/30">
+            4
+          </div>
+          <div>
+            <h2 className="font-semibold text-white text-base">Gaya Storyboard &amp; Konfigurasi Alur</h2>
+            <p className="text-xs text-slate-400">Pilih gaya storytelling untuk otomatis menentukan kamera, lighting, pose &amp; alur adegan</p>
+          </div>
         </div>
-        <h2 className="font-semibold text-white text-base">Konfigurasi Alur & Format Storyboard</h2>
+
+        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+          38 Gaya Tersedia
+        </span>
       </div>
 
-      {/* 1. Gaya Storyboard */}
-      <div>
-        <label className="block text-xs font-medium text-slate-300 mb-2 flex items-center gap-1.5">
-          <Palette className="w-3.5 h-3.5 text-emerald-400" />
-          Pilih Gaya Storyboard Iklan:
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {STYLE_OPTIONS.map((item) => {
+      {/* 1. KATEGORI TABS UTAMA (6 Kategori) */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
+            <Palette className="w-3.5 h-3.5 text-indigo-400" />
+            1. Kategori Gaya Storyboard
+          </label>
+
+          {/* Quick Search */}
+          <div className="relative w-44 sm:w-52">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari gaya (UGC, POV, Promo...)"
+              className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-8 pr-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition"
+            />
+          </div>
+        </div>
+
+        {/* Category Pills Slider */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1.5">
+          <button
+            type="button"
+            onClick={() => setActiveCategory('all')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+              activeCategory === 'all'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-400 shadow-md shadow-indigo-600/20'
+                : 'bg-slate-900/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <span>✨</span>
+            <span>Semua</span>
+            <span className="text-[10px] opacity-75">({ALL_STORYBOARD_STYLES.length})</span>
+          </button>
+
+          {STORYBOARD_CATEGORIES.map((cat) => {
+            const count = ALL_STORYBOARD_STYLES.filter((s) => s.category === cat.id).length;
+            const isCatActive = activeCategory === cat.id;
+
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setActiveCategory(cat.id);
+                  if (onChangeCategory) onChangeCategory(cat.id);
+                }}
+                className={`px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border text-center ${
+                  isCatActive
+                    ? `bg-gradient-to-r ${cat.gradient} text-white border-white/30 shadow-md`
+                    : 'bg-slate-900/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+                title={cat.description}
+              >
+                <span>{cat.icon}</span>
+                <span className="truncate">{cat.shortTitle}</span>
+                <span className="text-[10px] opacity-75">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Selected Category Description Banner */}
+        {activeCategory !== 'all' && (
+          <div className="px-3.5 py-2 rounded-xl bg-slate-900/40 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+            <span className="line-clamp-1">
+              {STORYBOARD_CATEGORIES.find((c) => c.id === activeCategory)?.description}
+            </span>
+            <span className="text-[10px] text-indigo-400 font-semibold shrink-0 ml-2">
+              {filteredStyles.length} pilihan
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* 2. GRID PILIHAN GAYA STORYBOARD */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            2. Pilih Gaya Storyboard:
+          </label>
+          <span className="text-[11px] text-slate-400">
+            Terpilih: <strong className="text-emerald-400 font-semibold">{currentStyleItem.name}</strong>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-700">
+          {filteredStyles.map((item) => {
             const isSelected = style === item.id;
             return (
               <button
-                key={item.id}
+                key={`${item.category}-${item.id}`}
                 type="button"
-                onClick={() => onChangeStyle(item.id)}
-                className={`text-left p-3 rounded-xl border transition cursor-pointer relative ${
+                onClick={() => handleSelectStyle(item)}
+                className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer relative group flex flex-col justify-between ${
                   isSelected
-                    ? 'border-emerald-500 bg-emerald-500/15 ring-1 ring-emerald-500/50'
-                    : 'border-slate-700/80 bg-slate-900/50 hover:bg-slate-700/40 hover:border-slate-600'
+                    ? 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-950/40'
+                    : 'border-slate-700/80 bg-slate-900/50 hover:bg-slate-800/80 hover:border-slate-600'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-slate-200">{item.name}</span>
-                  {isSelected && (
-                    <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3" />
+                <div>
+                  <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base">{item.icon}</span>
+                      <span className={`text-xs font-bold ${isSelected ? 'text-emerald-300' : 'text-slate-200 group-hover:text-white'}`}>
+                        {item.name}
+                      </span>
                     </div>
+
+                    {isSelected ? (
+                      <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    ) : item.badge ? (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 mb-2">
+                    {item.explanation}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400 truncate">
+                    Cocok: <span className="text-slate-300">{item.suitableFor}</span>
+                  </span>
+                  {isSelected && (
+                    <span className="text-emerald-400 font-bold shrink-0 ml-1">Aktif</span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">{item.desc}</p>
-                {item.badge && (
-                  <span className="inline-block mt-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    {item.badge}
-                  </span>
-                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* 2. Durasi Video, Jumlah Part, & Jumlah Scene per Part */}
+      {/* 3. STRUKTUR STORYBOARD (ALUR ADEGAN OTOMATIS) */}
+      <div className="bg-gradient-to-br from-slate-900/90 via-indigo-950/30 to-slate-900/90 rounded-xl p-4 border border-indigo-500/30 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center border border-indigo-500/30">
+              <ListTree className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-white flex items-center gap-2">
+                Struktur Storyboard
+                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
+                  Auto Disinkronkan dengan "{currentStyleItem.name}"
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Alur cerita, ritme adegan, dan peran produk disesuaikan otomatis oleh AI
+              </p>
+            </div>
+          </div>
+
+          {/* Preset Selector */}
+          {onChangeStructure && (
+            <div className="flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+              <select
+                value={structure}
+                onChange={(e) => onChangeStructure(e.target.value as StoryboardStructure)}
+                className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              >
+                {STRUCTURE_FLOW_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Visual Structure Flow Pills */}
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 flex items-center gap-1">
+            <span>Rantai Alur Adegan:</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            {activeStructurePreset.steps.map((step, idx) => (
+              <React.Fragment key={idx}>
+                <span className="px-2 py-1 rounded-lg bg-indigo-950/80 border border-indigo-500/40 text-indigo-200 text-[11px] font-semibold flex items-center gap-1">
+                  <span className="w-4 h-4 rounded-full bg-indigo-500/30 text-indigo-300 text-[9px] flex items-center justify-center font-mono">
+                    {idx + 1}
+                  </span>
+                  {step}
+                </span>
+                {idx < activeStructurePreset.steps.length - 1 && (
+                  <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        {/* Live 6-Scene Breakdown for Selected Style */}
+        <div className="space-y-2 pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+              <span>🎬 Rincian 6 Adegan Spesifik ({currentStyleItem.name}):</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowFullBreakdown(!showFullBreakdown)}
+              className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer"
+            >
+              <span>{showFullBreakdown ? 'Sembunyikan' : 'Tampilkan Detail'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFullBreakdown ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {showFullBreakdown && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {currentStyleItem.structureBreakdown.map((sceneDesc, idx) => (
+                <div
+                  key={idx}
+                  className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800/90 text-left space-y-1"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-emerald-400">
+                      SCENE {idx + 1}
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">
+                      {numPanels === 6 ? `${Math.round(duration / 6)}s` : `${Math.round(duration / numPanels)}s`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-snug font-medium">
+                    {sceneDesc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Camera, Lighting & Voiceover Specs of Selected Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-800 text-[11px]">
+          <div className="flex items-start gap-2 p-2 rounded-lg bg-slate-950/40 border border-slate-800/80">
+            <Camera className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-slate-400 text-[10px] block font-semibold">Gaya Kamera:</span>
+              <span className="text-slate-200 leading-tight">{currentStyleItem.cameraStyle}</span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 p-2 rounded-lg bg-slate-950/40 border border-slate-800/80">
+            <Sun className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-slate-400 text-[10px] block font-semibold">Pencahayaan / Mood:</span>
+              <span className="text-slate-200 leading-tight">{currentStyleItem.lightingStyle}</span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 p-2 rounded-lg bg-slate-950/40 border border-slate-800/80">
+            <Mic className="w-4 h-4 text-pink-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-slate-400 text-[10px] block font-semibold">Nada Voiceover (VO):</span>
+              <span className="text-slate-200 leading-tight">{currentStyleItem.voTone}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Durasi Video, Jumlah Part, & Jumlah Scene per Part */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-700/50">
         {/* Durasi */}
         <div>
@@ -165,12 +422,12 @@ export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
                   onClick={() => onChangeDuration(sec)}
                   className={`py-2 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
                     isSelected
-                      ? 'border-amber-500 bg-amber-500/20 text-amber-200'
+                      ? 'border-amber-500 bg-amber-500/20 text-amber-200 shadow-sm'
                       : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
                   {sec}s
-                  {sec === 15 && <span className="block text-[8px] text-amber-400 font-normal">Ref</span>}
+                  {sec === 20 && <span className="block text-[8px] text-amber-400 font-normal">Optimal</span>}
                 </button>
               );
             })}
@@ -193,7 +450,7 @@ export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
                   onClick={() => onChangeNumParts(p)}
                   className={`py-2 px-1 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
                     isSelected
-                      ? 'border-blue-500 bg-blue-500/20 text-blue-200'
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-200 shadow-sm'
                       : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
@@ -222,12 +479,14 @@ export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
                   onClick={() => onChangeNumPanels(item.count)}
                   className={`py-2 px-1 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
                     isSelected
-                      ? 'border-purple-500 bg-purple-500/20 text-purple-200'
+                      ? 'border-purple-500 bg-purple-500/20 text-purple-200 shadow-sm'
                       : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
                   {item.label.split(' ')[0]} {item.label.split(' ')[1]}
-                  {item.isDefault && <span className="block text-[8px] text-purple-300 font-normal">2x2 Grid</span>}
+                  {item.count === 6 && <span className="block text-[8px] text-purple-300 font-normal">3x2 Grid</span>}
+                  {item.count === 4 && <span className="block text-[8px] text-purple-300 font-normal">2x2 Grid</span>}
+                  {item.count === 3 && <span className="block text-[8px] text-purple-300 font-normal">1x3 Grid</span>}
                 </button>
               );
             })}
@@ -235,7 +494,7 @@ export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
         </div>
       </div>
 
-      {/* 3. Aspect Ratio & Target Engines */}
+      {/* 5. Aspect Ratio & Target Engines */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-700/50">
         {/* Aspect Ratio */}
         <div>
@@ -253,7 +512,7 @@ export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
                   onClick={() => onChangeAspectRatio(opt.ratio)}
                   className={`p-2 rounded-lg text-left border transition cursor-pointer ${
                     isSelected
-                      ? 'border-sky-500 bg-sky-500/20 text-sky-200'
+                      ? 'border-sky-500 bg-sky-500/20 text-sky-200 shadow-sm'
                       : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
@@ -277,14 +536,14 @@ export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
             className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
           >
             <option value="flow">Flow AI (Direkomendasikan)</option>
-            <option value="midjourney">Midjourney v6.1 (Poster & Grid Mode)</option>
+            <option value="midjourney">Midjourney v6.1 (Poster &amp; Grid Mode)</option>
             <option value="flux">Flux.1 Pro / Dev (Photorealistic)</option>
             <option value="ideogram">Ideogram 2.0 (Akurasi Teks Tinggi)</option>
             <option value="sdxl">Stable Diffusion XL</option>
             <option value="leonardo">Leonardo AI</option>
           </select>
           <p className="text-[10px] text-slate-400 mt-1">
-            Prompt TTI akan disesuaikan otomatis dengan syntax dan parameter engine terpilih.
+            Prompt TTI disesuaikan otomatis dengan syntax dan grid parameter engine terpilih.
           </p>
         </div>
 
@@ -307,7 +566,7 @@ export const StoryboardConfig: React.FC<StoryboardConfigProps> = ({
             <option value="pika">Pika 2.0</option>
           </select>
           <p className="text-[10px] text-slate-400 mt-1">
-            Prompt TTV akan memuat bracket kamera [Camera: Dolly / Pan], subject action, dan cue waktu.
+            Prompt TTV memuat bracket kamera [Camera: Dolly / Pan], subject action, dan cue waktu.
           </p>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getStyleById } from './src/data/storyboardStyles';
 
 dotenv.config();
 
@@ -35,6 +36,8 @@ app.post('/api/generate-storyboard', async (req, res) => {
       productDescription = '',
       productFeatures = [],
       storyboardStyle = 'lifestyle',
+      storyboardCategory = 'storytelling',
+      storyboardStructure = 'auto',
       numParts = 1,
       numPanels = 4,
       duration = 15,
@@ -53,19 +56,33 @@ app.post('/api/generate-storyboard', async (req, res) => {
       return res.status(503).json({ error: 'GEMINI_API_KEY not configured' });
     }
 
-    const ai = new GoogleGenAI();
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
 
     // Prepare multimodal parts
     const contents: any[] = [];
 
+    const styleInfo = getStyleById(storyboardStyle);
     const panelDurationSec = +(duration / numPanels).toFixed(1);
     const maxWordsPerScene = Math.max(3, Math.floor(panelDurationSec * 2.2));
     const idealWordsPerScene = Math.max(3, Math.floor(panelDurationSec * 1.8));
 
-    const systemInstruction = `You are a world-class advertising creative director and master prompt engineer specializing in commercial video ads (TikTok Ads, Instagram Reels, TVC) and storyboard presentations.
-You are tasked with generating a complete, production-grade advertising Storyboard sheet and two primary outputs:
-1. OUTPUT 1: PROMPT TEXT-TO-IMAGE (TTI) for Flow AI / Midjourney v6 / Flux to render the entire multi-panel storyboard presentation board. The master prompt MUST describe all ${numPanels} panels according to the selected "${storyboardStyle}" style in a ${numPanels === 6 ? '3x2 grid layout (6 panels)' : numPanels === 3 ? '1x3 grid layout (3 panels)' : '2x2 grid layout (4 panels)'}, with brand header, technical specs box, handwritten callouts/arrows, camera metadata tables below each frame, and footer.
-2. OUTPUT 2: PROMPT TEXT-TO-VIDEO (TTV) for AI video generators (Kling AI, Runway Gen-3 Alpha, Luma Dream Machine, Sora, Minimax Hailuo) with cinematic camera movement brackets [Camera: ...], actor choreography, lighting, sound design, and frame-accurate timing for all ${numPanels} scenes.
+    const systemInstruction = `You are an award-winning Executive Creative Director and Master AI Prompt Engineer at a world-class advertising agency, specializing in high-conversion commercial video ads (TikTok Ads, Instagram Reels, TVC) and agency-grade storyboard presentation boards.
+
+Your goal is to produce two extraordinary, production-ready outputs:
+1. OUTPUT 1: PROMPT TEXT-TO-IMAGE (TTI) for Flow AI / Midjourney v6.1 / Flux Pro to render an ultra-aesthetic multi-panel storyboard presentation board in ${numPanels === 6 ? '3x2 grid layout (6 panels)' : numPanels === 3 ? '1x3 grid layout (3 panels)' : '2x2 grid layout (4 panels)'}. The prompt must be deeply atmospheric, professional, photorealistic, with vector brand header, technical specs HUD card, subtle rounded frames, handwritten white annotation callout arrows, and clean camera metadata tables below each frame.
+2. OUTPUT 2: PROMPT TEXT-TO-VIDEO (TTV) for AI video generators (Kling AI, Runway Gen-3 Alpha, Sora, Minimax Hailuo, Luma) featuring cinematic camera movement brackets [Camera: ...], actor micro-expressions, fluid choreography, studio lighting, and synchronized voiceover for all ${numPanels} scenes.
+
+PROFESSIONAL PROMPT ENGINEERING STANDARDS (NO STIFF / ROBOTIC PROMPTS):
+- Master TTI Prompt: Specify Hasselblad H6D-100c or Arri Alexa LF 35mm optics, Profoto studio lighting, true-to-life physical materials, creamy depth of field, 35mm film color science, clean editorial presentation layout --ar 2:3 --v 6.1 --style raw.
+- Individual Scene TTI Prompts: Every scene in the JSON must include a dedicated "scenePromptTti" ready to generate that standalone frame in Midjourney/Flux.
+- Master & Scene TTV Prompts: Specify camera motion kinematics [Camera: Dynamic Tracking / Crane / Macro Dolly], framing, lighting setup, 60fps photorealism, and 35mm film LUT grading.
 
 ATURAN MUTLAK DURASI & KECEPATAN VOICE OVER (VO):
 - Durasi per scene adalah ${panelDurationSec} detik.
@@ -73,7 +90,7 @@ ATURAN MUTLAK DURASI & KECEPATAN VOICE OVER (VO):
 - Jumlah kata dalam 'vo' untuk tiap scene WAJIB MAKSIMAL ${maxWordsPerScene} KATA (IDEAL: ${idealWordsPerScene} KATA)!
 - DILARANG membuat kalimat panjang majemuk. Naskah VO harus singkat, padat, beritme, dan pas dengan durasi ${panelDurationSec} detik agar pengucapan terdengar santai, jelas, tidak belibet/terburu-buru, dan tidak terpotong musik.
 
-Language for VO, subtitles, callouts, and Indonesian market copy: ${language === 'id' ? 'Bahasa Indonesia yang natural, padat, dan persuasif (gaya iklan UGC/commercial ringkas)' : 'Persuasive, concise English marketing copy'}.`;
+Language for VO, subtitles, callouts, and Indonesian market copy: ${language === 'id' ? 'Bahasa Indonesia yang natural, padat, persuasif, dan ritmik (gaya iklan komersial modern)' : 'Persuasive, concise, cinematic English marketing copy'}.`;
 
     let userPromptText = `PRODUK:
 - Nama Produk: ${productName}
@@ -83,7 +100,9 @@ Language for VO, subtitles, callouts, and Indonesian market copy: ${language ===
 - Fitur & Keunggulan Utama: ${productFeatures.join(', ')}
 
 KONFIGURASI IKLAN DARI PENGGUNA (WAJIB DIIKUTI PERSIS):
-- Gaya Storyboard: ${storyboardStyle}
+- Gaya Storyboard Terpilih: ${styleInfo.name} (${storyboardStyle})
+- Kategori Gaya: ${styleInfo.category}
+- Struktur Alur Adegan: ${storyboardStructure.toUpperCase()}
 - Jumlah Part: ${numParts} Part
 - Jumlah Panel per Part: ${numPanels} Scene (WAJIB TEPAT ${numPanels} SCENE PER PART)
 - Total Durasi Video: ${duration} detik (${panelDurationSec} detik per scene)
@@ -94,26 +113,27 @@ KONFIGURASI IKLAN DARI PENGGUNA (WAJIB DIIKUTI PERSIS):
 - Target Engine TTI: ${targetTtiEngine}
 - Target Engine TTV: ${targetTtvEngine}
 
+REFERENSI ALUR WAJIB SESUAI GAYA "${styleInfo.name.toUpperCase()}":
+- Konsep Gaya: ${styleInfo.explanation}
+- Rincian Adegan Acuan (Wajib diadaptasi ke dalam ${numPanels} panel):
+${styleInfo.structureBreakdown.map((s, idx) => `  * Adegan ${idx + 1}: ${s}`).join('\n')}
+- Rekomendasi Kamera: ${styleInfo.cameraStyle}
+- Pencahayaan / Mood: ${styleInfo.lightingStyle}
+- Karakter Suara / VO: ${styleInfo.voTone}
+
+PANDUAN KHUSUS EKSEKUSI TEMA:
+- JIKA MEMILIH ASMR (ASMR Product / ASMR Detail): Wajib fokus pada visual mikro, tapping kuku ke kemasan, bunyi klik resleting/tutup, desah bisikan VO yang tenang, dan macro texture.
+- JIKA MEMILIH BEFORE -> AFTER: Wajib menampilkan keluhan/masalah nyata (Before) lalu proses dan reveal perubahan dramatis (After).
+- JIKA MEMILIH UNBOXING: Wajib alur paket datang -> buka segel -> reveal produk -> detail macro -> hands-on -> review & CTA.
+- JIKA MEMILIH TUTORIAL / HOW TO USE: Wajib langkah demi langkah (Step 1, Step 2, Step 3) dengan visual instruksi yang jelas.
+- JIKA MEMILIH CINEMATIC: Wajib framing dramatis, slow motion, lighting atmosferik, dan narasi puitis/elegan.
+- JIKA MEMILIH UGC / POV: Wajib sudut kamera selfie / POV orang pertama, gaya bicara santai seperti curhat ke followers, dan live demo spontan.
+
 ATURAN KERAS VOICE OVER (VO) AGAR TIDAK BELIBET & TIDAK TERPOTONG:
 - Kecepatan membaca VO iklan komersial Indonesia adalah ~2.2 kata per detik (130 kata per menit).
 - Alokasi durasi scene adalah TEPAT ${panelDurationSec} detik.
 - Naskah VO untuk tiap scene HARUS tepat antara ${Math.max(3, Math.floor(panelDurationSec * 1.4))} sampai ${maxWordsPerScene} kata (TIDAK BOLEH lebih dari ${maxWordsPerScene} kata!).
 - Kalimat harus to-the-point, jelas, artikulasi mudah, tidak berbelit-belit, dan dapat diucapkan secara rileks tepat dalam ${panelDurationSec} detik tanpa ada kata yang terpotong.
-
-PETUNJUK ALUR SESUAI GAYA "${storyboardStyle.toUpperCase()}" DAN ${numPanels} PANEL:
-${
-  storyboardStyle === 'unboxing'
-    ? numPanels === 6
-      ? `Untuk GAYA UNBOXING dengan 6 PANEL (${panelDurationSec} detik/scene, maks ${maxWordsPerScene} kata/scene):
-Panel 1: Paket Tiba & Kemasan Eksklusif (Hook unboxing, maks ${maxWordsPerScene} kata)
-Panel 2: Membuka Segel / Unsealing (Sensasi buka segel rapi, maks ${maxWordsPerScene} kata)
-Panel 3: First Impression Reveal (Kesan pertama saat terbuka, maks ${maxWordsPerScene} kata)
-Panel 4: Detail Inset & Material (Kolase 4 foto close up: material & kompartemen, maks ${maxWordsPerScene} kata)
-Panel 5: Uji Coba Langsung / Hands-on (Mencoba memakai secara nyata, maks ${maxWordsPerScene} kata)
-Panel 6: Review Kepuasan & Closing CTA (Ekspresi puas + 4 checklist badge, maks ${maxWordsPerScene} kata)`
-      : `Untuk GAYA UNBOXING dengan ${numPanels} PANEL, susun alur unboxing mulai dari paket datang, sensasi unsealing/first impression, detail produk, hingga kepuasan review & CTA. Tiap VO maks ${maxWordsPerScene} kata.`
-    : `Untuk GAYA ${storyboardStyle.toUpperCase()} dengan ${numPanels} PANEL, susun ${numPanels} adegan berdurasi ${panelDurationSec}s per scene dengan naskah VO maks ${maxWordsPerScene} kata.`
-}
 
 CRITICAL INSTRUCTIONS FOR MASTER TTI PROMPT:
 The "masterTtiPrompt" MUST be written specifically for ${numPanels === 6 ? 'a 3x2 grid layout (6 panels total)' : numPanels === 3 ? 'a 1x3 grid layout (3 panels total)' : 'a 2x2 grid layout (4 panels total)'} reflecting the "${storyboardStyle}" theme.
@@ -147,7 +167,22 @@ Return ONLY a valid JSON object strictly matching this schema without markdown c
       ]
     }
   ]
-}`;
+}
+
+- For EACH scene inside parts[0].scenes, you MUST include:
+  - "sceneNumber": integer 1 to ${numPanels}
+  - "phaseTitle": string (e.g. Hook / Detail / Hands-on / CTA)
+  - "timeRange": string (e.g. "0 – 4 detik")
+  - "shot": string camera framing
+  - "angle": string camera angle
+  - "duration": string
+  - "vo": string (strictly max ${maxWordsPerScene} words)
+  - "subtitle": string
+  - "calloutText": string concise visual annotation
+  - "visualDescription": string visual description
+  - "scenePromptTti": string detailed standalone prompt for Midjourney v6.1 / Flux
+  - "scenePromptTtv": string detailed video generation prompt with [Camera: ...]
+  - "cameraMovement": string camera movement direction`;
 
     // Add product image if base64
     if (productImage && productImage.startsWith('data:image/')) {
@@ -177,18 +212,34 @@ Return ONLY a valid JSON object strictly matching this schema without markdown c
 
     contents.push(userPromptText);
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-      },
-    });
+    const candidateModels = ['gemini-3.8-flash', 'gemini-flash-latest'];
+    let parsedData: any = null;
 
-    const text = response.text || '';
-    const cleanJson = text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
-    const parsedData = JSON.parse(cleanJson);
+    for (const modelName of candidateModels) {
+      try {
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents,
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const text = response.text || '';
+        const cleanJson = text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
+        parsedData = JSON.parse(cleanJson);
+        if (parsedData && parsedData.parts && parsedData.parts.length > 0) {
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`Storyboard model ${modelName} failed:`, err?.message || err);
+      }
+    }
+
+    if (!parsedData) {
+      throw new Error('All candidate AI models failed to generate valid storyboard JSON');
+    }
 
     // Normalize output fields to strictly match user configuration
     parsedData.scenesCount = numPanels;
@@ -221,6 +272,152 @@ Return ONLY a valid JSON object strictly matching this schema without markdown c
     console.error('Error generating storyboard with Gemini:', error);
     return res.status(500).json({
       error: 'Failed to generate storyboard with AI',
+      message: error?.message || String(error),
+    });
+  }
+});
+
+// Simple Ad Generation API Endpoint (1-Click Fast Ad)
+app.post('/api/generate-simple-ad', async (req, res) => {
+  try {
+    const {
+      productImage,
+      productName,
+      brandName = 'PRODUK PILIHAN',
+      tagline = 'Solusi Praktis & Menawan',
+      keyFeature = 'Kualitas premium & praktis digunakan',
+      pricePromo = 'Promo Diskon Spesial Hari Ini',
+      format = 'hook_viral',
+      duration = 15,
+      aspectRatio = '9:16',
+      voTone = 'energetic',
+    } = req.body;
+
+    if (!productName) {
+      return res.status(400).json({ error: 'Nama produk harus diisi' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({ error: 'GEMINI_API_KEY not configured' });
+    }
+
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+    const contents: any[] = [];
+
+    const promptText = `Anda adalah Creative Director iklan komersial video pendek (TikTok Ads, Reels, YouTube Shorts).
+Tugas Anda adalah membuat 1 paket IKLAN SIMPEL & CEPAT (${duration} detik, ${aspectRatio}) untuk:
+- Nama Produk: ${productName}
+- Brand: ${brandName}
+- Tagline: ${tagline}
+- Keunggulan Utama: ${keyFeature}
+- Promo / Penawaran: ${pricePromo}
+- Format Iklan: ${format.toUpperCase()}
+- Gaya/Nada Suara VO: ${voTone}
+
+PANDUAN FORMAT IKLAN:
+- 0-3s: Hook Pembuka (Pattern Interrupt yang membuat penonton berhenti scroll)
+- 3-10s: Demonstrasi/Review/Solusi Cepat menonjolkan "${keyFeature}"
+- 10-15s: Call to Action (CTA) mendesak membeli atau checkout di keranjang dengan penawaran "${pricePromo}"
+
+Naskah VO WAJIB singkat, padat, beritme, total tidak lebih dari 35 kata untuk durasi 15 detik.
+
+Return ONLY a valid JSON object matching this schema without markdown code fences:
+{
+  "productName": "${productName}",
+  "brandName": "${brandName}",
+  "format": "${format}",
+  "formatName": "Nama format iklan bahasa Indonesia",
+  "duration": ${duration},
+  "platform": "TikTok / Reels / Shorts (${aspectRatio})",
+  "hookHeadline": "Kalimat Hook Pembuka yang menarik perhatian dalam 3 detik pertama",
+  "fullVoScript": "Naskah voiceover lengkap dari awal sampai akhir",
+  "scenes": [
+    {
+      "timeRange": "0 - 3 Detik (Hook)",
+      "title": "Judul scene 1",
+      "visualAction": "Deskripsi aksi visual jelas",
+      "cameraDirection": "[Camera: ...]",
+      "voScript": "Naskah VO scene 1",
+      "onScreenText": "Teks overlay di layar"
+    },
+    {
+      "timeRange": "3 - 10 Detik (Solusi & Demo)",
+      "title": "Judul scene 2",
+      "visualAction": "Deskripsi aksi visual jelas",
+      "cameraDirection": "[Camera: ...]",
+      "voScript": "Naskah VO scene 2",
+      "onScreenText": "Teks overlay di layar"
+    },
+    {
+      "timeRange": "10 - 15 Detik (CTA)",
+      "title": "Judul scene 3",
+      "visualAction": "Deskripsi aksi visual jelas",
+      "cameraDirection": "[Camera: ...]",
+      "voScript": "Naskah VO scene 3",
+      "onScreenText": "Teks overlay di layar"
+    }
+  ],
+  "ttiVisualPrompt": "Detailed commercial photography master prompt for Flow AI/Midjourney/Flux with product and lighting details --ar ${aspectRatio} --v 6.1",
+  "ttvVideoPrompt": "Prompt video untuk Kling AI / Runway Gen-3 dengan arahan kamera [Camera: ...] dan lighting",
+  "captionCopy": "Copywriting caption Instagram/TikTok yang menarik dan persuasif",
+  "hashtags": ["#Tag1", "#Tag2", "#Tag3", "#Tag4", "#Tag5"]
+}`;
+
+    if (productImage && productImage.startsWith('data:image/')) {
+      const match = productImage.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+      if (match) {
+        contents.push({
+          inlineData: {
+            mimeType: match[1],
+            data: match[2],
+          },
+        });
+      }
+    }
+
+    contents.push({ text: promptText });
+
+    const candidateModels = ['gemini-3.8-flash', 'gemini-flash-latest'];
+    let parsedData: any = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents,
+          config: {
+            responseMimeType: 'application/json',
+          },
+        });
+
+        const text = response.text || '';
+        const cleanJson = text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
+        parsedData = JSON.parse(cleanJson);
+        if (parsedData && parsedData.scenes && parsedData.scenes.length > 0) {
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`Simple ad model ${modelName} failed:`, err?.message || err);
+      }
+    }
+
+    if (!parsedData) {
+      throw new Error('All candidate AI models failed to generate valid simple ad JSON');
+    }
+
+    return res.json(parsedData);
+  } catch (error: any) {
+    console.error('Error generating simple ad with Gemini:', error);
+    return res.status(500).json({
+      error: 'Failed to generate simple ad with AI',
       message: error?.message || String(error),
     });
   }

@@ -1,11 +1,67 @@
+export type StoryboardCategory =
+  | 'storytelling'
+  | 'product_shopping'
+  | 'social_ugc'
+  | 'direct_response'
+  | 'cinematic'
+  | 'educational';
+
+export type StoryboardStructure =
+  | 'auto'
+  | 'hook_problem_solution_cta'
+  | 'hook_product_benefit_cta'
+  | 'before_after_flow'
+  | 'unboxing_review_flow'
+  | 'cinematic_story_flow'
+  | (string & {});
+
 export type StoryboardStyle =
   | 'lifestyle'
   | 'before_after'
   | 'unboxing'
-  | 'testimonial'
+  | 'unboxing_review'
   | 'problem_solution'
+  | 'product_showcase'
+  | 'ugc'
+  | 'testimonial'
+  | 'product_demo'
+  | 'how_to_use'
+  | 'demo_how_to'
+  | 'tutorial'
+  | 'hook_product_benefit_cta'
+  | 'storytelling'
+  | 'emotional_story'
+  | 'day_in_my_life'
+  | 'pov'
+  | 'first_impression'
+  | 'comparison'
+  | 'feature_highlight'
+  | 'benefit_focus'
+  | 'social_proof'
+  | 'reaction_surprise'
+  | 'challenge'
+  | 'transformation'
+  | 'mini_commercial'
+  | 'aesthetic_visual'
+  | 'asmr_product'
   | 'asmr_detail'
-  | 'emotional_story';
+  | 'satisfying'
+  | 'behind_the_scenes'
+  | 'gifting_story'
+  | 'seasonal_moment'
+  | 'limited_promo'
+  | 'problem_discovery'
+  | 'expectation_reality'
+  | 'three_reasons_benefits'
+  | 'top_features'
+  | 'question_answer'
+  | 'myth_fact'
+  | 'story_product_reveal'
+  | 'cinematic_product'
+  | 'slow_motion'
+  | 'macro_product_shot'
+  | 'emotional_cinematic'
+  | (string & {});
 
 export type AspectRatio = '9:16' | '16:9' | '1:1' | '4:5';
 
@@ -58,6 +114,8 @@ export interface StoryboardData {
   overlayTextRule: string;
   targetAudience: string;
   style: StoryboardStyle;
+  category?: StoryboardCategory;
+  structurePattern?: string;
   parts: StoryboardPart[];
   // Outputs
   masterTtiPrompt: string;
@@ -78,6 +136,8 @@ export interface GeneratorRequest {
   productDescription: string;
   productFeatures: string[];
   storyboardStyle: StoryboardStyle;
+  storyboardCategory?: StoryboardCategory;
+  storyboardStructure?: StoryboardStructure;
   numParts: number;
   numPanels: number;
   duration: number;
@@ -88,3 +148,37 @@ export interface GeneratorRequest {
   targetTtiEngine: TtiEngine;
   targetTtvEngine: TtvEngine;
 }
+
+export type SimpleAdFormat =
+  | 'hook_viral'
+  | 'racun_tiktok'
+  | 'flash_sale'
+  | 'satisfying_hero'
+  | 'problem_solution'
+  | 'top_3_reasons';
+
+export interface SimpleAdScene {
+  timeRange: string;
+  title: string;
+  visualAction: string;
+  cameraDirection: string;
+  voScript: string;
+  onScreenText: string;
+}
+
+export interface SimpleAdData {
+  productName: string;
+  brandName?: string;
+  format: SimpleAdFormat;
+  formatName: string;
+  duration: number;
+  platform: string;
+  hookHeadline: string;
+  fullVoScript: string;
+  scenes: SimpleAdScene[];
+  ttiVisualPrompt: string;
+  ttvVideoPrompt: string;
+  captionCopy: string;
+  hashtags: string[];
+}
+
